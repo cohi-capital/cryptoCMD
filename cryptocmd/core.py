@@ -25,13 +25,16 @@ class CmcScraper(object):
     """
 
     def __init__(
-        self,
-        coin_code,
-        start_date=None,
-        end_date=None,
-        all_time=False,
-        order_ascending=False,
-        fiat="USD",
+            self,
+            coin_code,
+            start_date=None,
+            end_date=None,
+            all_time=False,
+            order_ascending=False,
+            fiat="USD",
+            count=10,
+            time_period="daily",
+            interval="daily"
     ):
         """
         :param coin_code: coin code of cryptocurrency e.g. btc
@@ -40,7 +43,9 @@ class CmcScraper(object):
         :param all_time: 'True' if need data of all time for respective cryptocurrency
         :param order_ascending: data ordered by 'Date' in ascending order (i.e. oldest first).
         :param fiat: fiat code eg. USD, EUR
-
+        :param count: number of time periods to return results for
+        :param time_period: Time period to return OHLCV data for eg. "daily" or "hourly"
+        :param interval: interval that "time_period" is sampled e.g "hourly" "daily" "weekly" "monthly" "yearly" "1h" "2h" "3h" "4h" "6h" "12h" "1d" "2d" "3d" "7d" "14d" "15d" "30d" "60d" "90d" "365d"
         """
 
         self.coin_code = coin_code
@@ -49,6 +54,10 @@ class CmcScraper(object):
         self.all_time = bool(all_time)
         self.order_ascending = order_ascending
         self.fiat = fiat
+        self.count = count
+        self.time_period = time_period
+        self.interval = interval
+
         self.headers = ["Date", "Open", "High", "Low", "Close", "Volume", "Market Cap"]
         self.rows = []
 
@@ -84,15 +93,14 @@ class CmcScraper(object):
             self.start_date, self.end_date = None, None
 
         coin_data = download_coin_data(
-            self.coin_code, self.start_date, self.end_date, self.fiat
+            self.coin_code, self.start_date, self.end_date, self.fiat, self.count, self.time_period, self.interval
         )
 
         for _row in coin_data["data"]["quotes"]:
 
             _row_quote = list(_row["quote"].values())[0]
-            date = datetime.strptime(
-                _row_quote["timestamp"], "%Y-%m-%dT%H:%M:%S.%fZ"
-            ).strftime("%d-%m-%Y")
+            date = datetime.strptime(_row_quote["timestamp"], "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
 
             row = [
                 date,
@@ -160,7 +168,9 @@ class CmcScraper(object):
 
         # convert 'Date' column to datetime type
         dataframe["Date"] = pd.to_datetime(
-            dataframe["Date"], format="%d-%m-%Y", dayfirst=True
+            dataframe["Date"],
+            format="%Y-%m-%dT%H:%M:%S.%fZ",
+            dayfirst=True
         )
 
         if date_as_index:
