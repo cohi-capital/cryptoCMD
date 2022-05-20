@@ -58,7 +58,10 @@ class CmcScraper(object):
         self.time_period = time_period
         self.interval = interval
 
-        self.headers = ["Date", "Open", "High", "Low", "Close", "Volume", "Market Cap"]
+        self.headers = [
+            "ID", "Name", "Symbol", "Date", "Open", "High", "Low", "Close", "Volume", "Market Cap", "Time Open",
+            "Time Close", "Time High", "Time Low"
+        ]
         self.rows = []
 
         # enable all_time download if start_time or end_time is not given
@@ -97,12 +100,13 @@ class CmcScraper(object):
         )
 
         for _row in coin_data["data"]["quotes"]:
-
             _row_quote = list(_row["quote"].values())[0]
             date = datetime.strptime(_row_quote["timestamp"], "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
-
             row = [
+                coin_data["data"]["id"],
+                coin_data["data"]["name"],
+                coin_data["data"]["symbol"],
                 date,
                 _row_quote["open"],
                 _row_quote["high"],
@@ -110,6 +114,10 @@ class CmcScraper(object):
                 _row_quote["close"],
                 _row_quote["volume"],
                 _row_quote["market_cap"],
+                _row["time_open"],
+                _row["time_close"],
+                _row["time_high"],
+                _row["time_low"],
             ]
 
             self.rows.insert(0, row)
