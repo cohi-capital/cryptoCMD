@@ -3,9 +3,23 @@
 
 from __future__ import print_function
 
-import sys
 import datetime
-from requests import get
+import sys
+
+import requests
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
+
+retry_strategy = Retry(
+    total=3,
+    backoff_factor=2,
+    status_forcelist=[429, 500, 502, 503, 504],
+    method_whitelist=["HEAD", "GET", "OPTIONS"]
+)
+adapter = HTTPAdapter(max_retries=retry_strategy)
+http = requests.Session()
+http.mount("https://", adapter)
+http.mount("http://", adapter)
 
 
 def get_url_data(url):
@@ -16,7 +30,7 @@ def get_url_data(url):
     """
 
     try:
-        response = get(url)
+        response = http.get(url)
         return response
     except Exception as e:
         if hasattr(e, "message"):
@@ -83,17 +97,13 @@ def download_coin_data(coin_code, start_date, end_date, fiat, count, time_period
     # convert the dates to timestamp for the url
     start_date_timestamp = int(
         (
-            datetime.datetime.strptime(start_date, "%d-%m-%Y")
-            - datetime.timedelta(days=1)
-        )
-        .replace(tzinfo=datetime.timezone.utc)
-        .timestamp()
+                datetime.datetime.strptime(start_date, "%d-%m-%Y")
+                - datetime.timedelta(days=1)
+        ).replace(tzinfo=datetime.timezone.utc).timestamp()
     )
 
     end_date_timestamp = int(
-        datetime.datetime.strptime(end_date, "%d-%m-%Y")
-        .replace(tzinfo=datetime.timezone.utc)
-        .timestamp()
+        datetime.datetime.strptime(end_date, "%d-%m-%Y").replace(tzinfo=datetime.timezone.utc).timestamp()
     )
 
     api_url = "https://web-api.coinmarketcap.com/v1/cryptocurrency/ohlcv/historical?convert={}&slug={}&time_end={}&time_start={}&interval={}&time_period={}&count={}".format(
